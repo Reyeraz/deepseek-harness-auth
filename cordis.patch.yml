@@ -1,0 +1,17 @@
+# dsh-auth bundle patch: mount the login/register window plugin.
+#
+# Applied when this bundle appears in a profile's dsh.profile.bundles list.
+# The host half (package root) registers the /dsh-auth HTTP routes on the
+# harness web server; the browser half (dsh.client) is discovered
+# automatically through the package's dsh.client declaration and
+# exports["./client"].
+
+- insert:
+    - id: auth-window
+      name: dsh-auth
+      # Uncomment and edit to switch off the built-in demo account store and
+      # forward every auth request to your own backend instead:
+      #
+      # config:
+      #   mode: proxy
+      #   apiBaseUrl: 'https://auth.example.com'

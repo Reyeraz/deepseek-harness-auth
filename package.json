@@ -1,0 +1,53 @@
+{
+  "name": "dsh-auth",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness Web UI 登录/注册窗口插件：侧边栏入口按钮 + 登录/注册弹窗 + 宿主端演示鉴权 API",
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "cordis.patch.yml",
+    "docs",
+    "README.md"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "tsdown -c tsdown.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepare": "npm run build"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.0",
+    "@deepseek-ai/schemastery": "^3.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  }
+}

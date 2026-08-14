@@ -1,0 +1,57 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "typeRoots": [
+      "../../.temp/deepseek-harness/node_modules/@types"
+    ],
+    "paths": {
+      "react": [
+        "../../.temp/deepseek-harness/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react/index.d.ts"
+      ],
+      "react/jsx-runtime": [
+        "../../.temp/deepseek-harness/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react/jsx-runtime.d.ts"
+      ],
+      "@deepseek-ai/cordis": [
+        "../../.temp/deepseek-harness/vendor/cordis/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/schemastery": [
+        "../../.temp/deepseek-harness/vendor/schemastery/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-host-webserver": [
+        "../../.temp/deepseek-harness/packages/host/webserver/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-runtime": [
+        "../../.temp/deepseek-harness/packages/client/runtime/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-runtime/client": [
+        "../../.temp/deepseek-harness/packages/client/runtime/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-slots": [
+        "../../.temp/deepseek-harness/packages/client/ui-slots/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-primitives": [
+        "../../.temp/deepseek-harness/packages/client/ui-primitives/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-sidebar/client": [
+        "../../.temp/deepseek-harness/packages/client/ui-sidebar/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-layout/client": [
+        "../../.temp/deepseek-harness/packages/client/ui-layout/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-locale/client": [
+        "../../.temp/deepseek-harness/packages/client/locale/lib/types/client/index.d.ts"
+      ]
+    }
+  },
+  "include": ["src"]
+}
