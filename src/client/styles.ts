@@ -6,6 +6,9 @@
 export const STYLE_ID = 'dsh-auth-style'
 
 export const CSS = `
+.dsh-auth-dialog {
+  width: min(440px, 100%);
+}
 [data-dsh-auth-trigger] {
   display: flex;
   align-items: center;
@@ -131,7 +134,7 @@ export const CSS = `
   flex-direction: column;
   gap: 12px;
   padding: 16px 0;
-  border-bottom: 1px solid var(--dsw-alias-border-l2, rgba(127,127,127,.14));
+  border-top: 1px solid var(--dsw-alias-border-l2, rgba(127,127,127,.14));
 }
 [data-dsh-auth-settings-head] {
   display: flex;
@@ -271,5 +274,59 @@ export const CSS = `
 [data-dsh-auth-user-delete]:disabled {
   opacity: .6;
   cursor: default;
+}
+[data-dsh-auth-dialog] {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+[data-dsh-auth-dialog-head] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 22px 24px 0;
+}
+[data-dsh-auth-dialog-title] {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary, #1a1d23);
+}
+[data-dsh-auth-dialog-close] {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary, #8b93a1);
+}
+[data-dsh-auth-dialog-close]:hover {
+  background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.16));
+}
+[data-dsh-auth-dialog-desc] {
+  margin: 4px 24px 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary, #8b93a1);
+}
+[data-dsh-auth-dialog-body] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 24px 0;
+}
+[data-dsh-auth-dialog-foot] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 20px 24px 24px;
 }
 `

@@ -16,8 +16,11 @@
   管理员关闭注册后，注册 Tab 自动禁用并提示。
 - 登录成功后侧边栏显示用户名，弹窗切换为「我的账号」资料视图，可一键退出登录。
 - 会话令牌保存在浏览器 localStorage，刷新页面自动恢复登录状态。
+- **强制登录**：未登录时自动弹出登录窗口且无法关闭（无关闭按钮、Esc 与遮罩点击无效），
+  登录后才能使用界面。
 - **内置管理员账号**（演示模式）：`admin / admin123`，可随时开放/关闭注册。
-- **设置面板账号管理**：列出所有账号、删除普通账号、一键开关注册。
+- **账号管理（我的账号）**：管理员登录后，在「我的账号」视图里列出所有账号、
+  删除普通账号、一键开关注册。
 - **演示模式（默认）**：宿主端自带账号存储（scrypt 加盐哈希 + 随机令牌），数据持久化到
   profile 的 `data/dsh-auth/auth.json`，零外部依赖。
 - **代理模式**：把全部 `/dsh-auth/*` 请求转发到你的鉴权后端，无 CORS 问题。
@@ -58,8 +61,8 @@ dsh --profile web web
 |---|---|---|
 | 管理员 | `admin` | `admin123` |
 
-登录管理员账号后，打开 **设置 → 账号管理** 即可管理账号：开关注册、查看账号列表、
-删除普通账号。内置管理员账号不可删除。
+登录管理员账号后，点击侧边栏账号入口打开「我的账号」即可管理账号：开关注册、
+查看账号列表、删除普通账号。内置管理员账号不可删除。
 
 ### 从源码 checkout 安装（开发模式）
 
@@ -95,7 +98,7 @@ pnpm dsh --profile web web
 | 半区 | 入口 | 作用 |
 |---|---|---|
 | Host（Node） | [`src/index.ts`](src/index.ts) | 在 `ctx.webServer` 注册 `/dsh-auth/*` 路由（同源、无 CORS）；演示模式实现账号/会话/注册开关存储，代理模式转发外部 API |
-| Client（浏览器） | [`src/client/index.ts`](src/client/index.ts) | 通过 `dsh.client` 客户端模块机制加载；`sidebar.footer.action` 挂入口按钮，`shell.overlay` 挂登录窗口，`settings.general.item` 挂账号管理行，三处共享同一个 store 实例 |
+| Client（浏览器） | [`src/client/index.ts`](src/client/index.ts) | 通过 `dsh.client` 客户端模块机制加载；`sidebar.footer.action` 挂入口按钮，`shell.overlay` 挂登录窗口（未登录自动弹出且不可关闭；登录后的「我的账号」视图内嵌管理员账号管理），两处共享同一个 store 实例 |
 
 `shell.overlay` 是官方文档中专门留给插件的「全屏悬浮层」插槽（additive list slot），
 登录窗口以框架自带的 `Modal` 组件渲染在其上。

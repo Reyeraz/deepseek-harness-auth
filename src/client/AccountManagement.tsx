@@ -1,33 +1,26 @@
 /**
- * General-settings row: account management for the demo store. Shows a sign-in
- * prompt for non-admins; for an admin it lists every account, toggles
- * demo-mode registration on/off, and deletes non-admin accounts. Hidden
- * controls in proxy mode (the external service owns account management).
+ * Account management rendered inside the signed-in profile view of the auth
+ * modal (admin role only): registration on/off switch, the account list, and
+ * deleting regular accounts. Proxy mode hides the controls (the external
+ * service owns account management).
  */
 import { useEffect, useState } from 'react'
 import { IconWarningOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-// Type-only: pulls the settings SlotMap merge ('settings.general.item').
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AuthApi } from './api.ts'
-import type { AuthUser, AuthStore } from './authStore.ts'
-import type { AuthModalInjected } from './AuthModal.tsx'
+import type { AuthUser } from './authStore.ts'
+import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 
-export type AccountManagementRowProps =
-  PropsRuntime<'settings.general.item'>
-  & PropsStore<AuthStore>
-  & InjectFace<AuthModalInjected>
-  & PropsLocale<'auth'>
+export interface AccountManagementProps {
+  api: AuthApi
+  t: TranslateNS<'auth'>
+}
 
-export function AccountManagementRow({ useStore, actions, api, t }: AccountManagementRowProps) {
-  const user = useStore(state => state.user)
+export function AccountManagement({ api, t }: AccountManagementProps) {
   const [mode, setMode] = useState<'demo' | 'proxy' | null>(null)
   const [registrationOpen, setRegistrationOpen] = useState<boolean | null>(null)
   const [users, setUsers] = useState<AuthUser[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const isAdmin = user?.role === 'admin'
 
   const load = async (): Promise<void> => {
     setBusy(true)
@@ -50,8 +43,7 @@ export function AccountManagementRow({ useStore, actions, api, t }: AccountManag
     }
   }
 
-  // Reload whenever the signed-in user changes (login/logout/role change).
-  useEffect(() => { void load() }, [user?.username, user?.role])
+  useEffect(() => { void load() }, [])
 
   const toggleRegistration = async (): Promise<void> => {
     if (registrationOpen === null) return
@@ -101,18 +93,7 @@ export function AccountManagementRow({ useStore, actions, api, t }: AccountManag
           <span>{error}</span>
         </div>
       )}
-      {!isAdmin ? (
-        <div data-dsh-auth-settings-actions>
-          <span>{t('settings.account.loginPrompt')}</span>
-          <button
-            type="button"
-            data-dsh-auth-settings-login
-            onClick={() => { actions.open('login') }}
-          >
-            {t('settings.account.openLogin')}
-          </button>
-        </div>
-      ) : mode === 'proxy' ? null : (
+      {mode === 'proxy' ? null : (
         <>
           <div data-dsh-auth-registration>
             <div>

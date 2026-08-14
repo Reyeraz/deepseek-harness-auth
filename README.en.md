@@ -21,10 +21,14 @@
 - After signing in the sidebar shows the user name, and the modal becomes a
   "My account" profile view with a sign-out button.
 - The session token lives in `localStorage`, so the session survives reloads.
+- **Forced sign-in**: while signed out, the login dialog opens automatically
+  and cannot be dismissed (no close button; Escape and mask clicks are
+  ignored), so the app is unusable until you sign in.
 - **Built-in admin account** (demo mode): `admin / admin123`; can toggle
   registration on/off at any time.
-- **Account management in the settings panel**: list every account, delete
-  regular accounts, and open/close registration with one click.
+- **Account management ("My account")**: after signing in as admin, list
+  every account, delete regular accounts, and open/close registration with
+  one click inside the "My account" view.
 - **Demo mode (default)**: the host ships its own account store (scrypt salted
   hashes + random tokens), persisted to `<profile>/data/dsh-auth/auth.json`.
   Zero external dependencies.
@@ -72,9 +76,10 @@ bottom of the sidebar.
 |---|---|---|
 | Admin | `admin` | `admin123` |
 
-After signing in as admin, open **Settings → Account management** to manage
-accounts: toggle registration, view the account list, and delete regular
-accounts. The built-in admin account cannot be deleted.
+After signing in as admin, click the sidebar account entry to open
+**My account** and manage accounts: toggle registration, view the account
+list, and delete regular accounts. The built-in admin account cannot be
+deleted.
 
 ### Install from a source checkout (development)
 
@@ -109,7 +114,7 @@ channels:
 | Half | Entry | Role |
 |---|---|---|
 | Host (Node) | [`src/index.ts`](src/index.ts) | Registers `/dsh-auth/*` routes on `ctx.webServer` (same origin, no CORS); demo mode implements the account/session/registration store, proxy mode forwards to an external API |
-| Client (browser) | [`src/client/index.ts`](src/client/index.ts) | Loaded through the `dsh.client` client-module mechanism; registers the entry button in `sidebar.footer.action`, the modal in `shell.overlay`, and the account-management row in `settings.general.item`, sharing one store instance |
+| Client (browser) | [`src/client/index.ts`](src/client/index.ts) | Loaded through the `dsh.client` client-module mechanism; registers the entry button in `sidebar.footer.action` and the modal in `shell.overlay` (auto-opened and not dismissible while signed out; the signed-in "My account" view embeds the admin account management), sharing one store instance |
 
 `shell.overlay` is the frame-wide floating layer the official docs reserve for
 plugins (an additive list slot); the modal is rendered there with the

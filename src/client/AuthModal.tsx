@@ -1,15 +1,19 @@
 /**
- * The login / registration window: a controlled Modal on the frame-wide
- * shell.overlay layer with login/register tabs, client-side validation,
- * busy/error states, and a profile view once signed in.
+ * The login / registration window: a controlled headless Modal on the
+ * frame-wide shell.overlay layer with login/register tabs, client-side
+ * validation, busy/error states, and a signed-in profile view that carries
+ * the admin account-management section. While signed out the dialog cannot
+ * be dismissed (no close button; Escape and mask clicks are ignored), which
+ * enforces login before the rest of the app can be used.
  */
 import {
-  Button, IconUserOutline16, IconWarningOutline16, Input, Modal,
+  Button, IconCloseOutline16, IconUserOutline16, IconWarningOutline16, Input, Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import { useEffect, useState } from 'react'
 // Type-only: pulls the ui-layout SlotMap merge ('shell.overlay').
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+import { AccountManagement } from './AccountManagement.tsx'
 import type { AuthApi } from './api.ts'
 import type { AuthStore } from './authStore.ts'
 
@@ -44,14 +48,17 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
       () => { if (!cancelled) setRegistrationOpen(true) },
     )
     return () => { cancelled = true }
-  }, [open, api])
+  }, [open, api, user?.username])
 
   if (!open) return null
 
   const registrationDisabled = registrationOpen === false
+  const signedIn = user !== null
+  // While signed out the dialog is the app's front door: it cannot be closed.
+  const close = (): void => { if (signedIn) actions.close() }
 
   const submit = async (): Promise<void> => {
-    if (busy || user !== null) return
+    if (busy || signedIn) return
     if (tab === 'register' && registrationDisabled) {
       actions.setError(t('modal.registerClosed'))
       return
@@ -83,8 +90,8 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
     actions.setError(null)
     try {
       if (tab === 'login') {
-        const signedIn = await api.login(username.trim(), password)
-        actions.setUser(signedIn)
+        const signedInUser = await api.login(username.trim(), password)
+        actions.setUser(signedInUser)
         actions.resetForm()
         actions.close()
       } else {
@@ -112,22 +119,27 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
     } catch {
       // Local sign-out must still succeed even if the server is unreachable.
     }
+    // Forced login: the dialog stays open on the login tab.
     actions.setUser(null)
     actions.resetForm()
-    actions.close()
+    actions.switchTab('login')
+    actions.setNotice(null)
     actions.setBusy(false)
   }
 
-  const title = user !== null
+  const title = signedIn
     ? t('modal.title.profile')
     : tab === 'login' ? t('modal.title.login') : t('modal.title.register')
 
-  const body = user !== null ? (
-    <div data-dsh-auth-profile>
-      <span data-dsh-auth-profile-avatar><IconUserOutline16 size={22} /></span>
-      <span data-dsh-auth-profile-name>{user.displayName}</span>
-      <span data-dsh-auth-profile-user>{user.username}</span>
-    </div>
+  const body = signedIn ? (
+    <>
+      <div data-dsh-auth-profile>
+        <span data-dsh-auth-profile-avatar><IconUserOutline16 size={22} /></span>
+        <span data-dsh-auth-profile-name>{user.displayName}</span>
+        <span data-dsh-auth-profile-user>{user.username}</span>
+      </div>
+      {user.role === 'admin' && <AccountManagement api={api} t={t} />}
+    </>
   ) : (
     <>
       <div data-dsh-auth-tabs role="tablist">
@@ -219,29 +231,43 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
     </>
   )
 
-  const footer = user !== null ? (
+  const footer = signedIn ? (
     <Button variant="outline" data-dsh-auth-logout disabled={busy} onClick={() => { void signOut() }}>
       {t('action.logout')}
     </Button>
   ) : (
-    <>
-      <Button variant="ghost" onClick={() => { actions.close() }}>{t('action.cancel')}</Button>
-      <Button variant="primary" data-dsh-auth-submit disabled={busy} onClick={() => { void submit() }}>
-        {tab === 'login' ? t('action.login') : t('action.register')}
-      </Button>
-    </>
+    <Button variant="primary" data-dsh-auth-submit disabled={busy} onClick={() => { void submit() }}>
+      {tab === 'login' ? t('action.login') : t('action.register')}
+    </Button>
   )
 
   return (
     <Modal
       open
+      headless
       title={title}
       closeLabel={t('action.cancel')}
-      description={user === null ? t('modal.description') : undefined}
-      onClose={() => { actions.close() }}
-      footer={footer}
+      onClose={close}
+      className="dsh-auth-dialog"
     >
-      {body}
+      <div data-dsh-auth-dialog>
+        <div data-dsh-auth-dialog-head>
+          <h2 data-dsh-auth-dialog-title>{title}</h2>
+          {signedIn && (
+            <button
+              type="button"
+              data-dsh-auth-dialog-close
+              aria-label={t('action.cancel')}
+              onClick={close}
+            >
+              <IconCloseOutline16 size={14} />
+            </button>
+          )}
+        </div>
+        {!signedIn && <p data-dsh-auth-dialog-desc>{t('modal.description')}</p>}
+        <div data-dsh-auth-dialog-body>{body}</div>
+        <div data-dsh-auth-dialog-foot>{footer}</div>
+      </div>
     </Modal>
   )
 }
