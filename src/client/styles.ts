@@ -8,6 +8,7 @@ export const STYLE_ID = 'dsh-auth-style'
 export const CSS = `
 .dsh-auth-dialog {
   width: min(440px, 100%);
+  max-height: min(640px, calc(100vh - 48px));
 }
 [data-dsh-auth-trigger] {
   display: flex;
@@ -278,9 +279,12 @@ export const CSS = `
 [data-dsh-auth-dialog] {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
 }
 [data-dsh-auth-dialog-head] {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -319,10 +323,14 @@ export const CSS = `
 [data-dsh-auth-dialog-body] {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   gap: 14px;
   padding: 18px 24px 0;
 }
 [data-dsh-auth-dialog-foot] {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
