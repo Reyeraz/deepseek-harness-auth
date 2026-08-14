@@ -9,6 +9,15 @@
 ![language](https://img.shields.io/badge/language-TypeScript-3178c6.svg)
 ![platform](https://img.shields.io/badge/platform-DeepSeek%20Harness-4b8bf5.svg)
 
+> ⚠️ **Toy-plugin disclaimer**
+>
+> This project is a demo/toy plugin meant for learning and local experiments.
+> **It is not recommended for production deployment**: the forced sign-in is
+> only a frontend UI gate (it can be bypassed), demo mode stores data in plain
+> JSON without rate limiting, and the built-in admin credentials are public in
+> this document. For production, use `mode: proxy` with a real auth service
+> and put an authenticated reverse proxy in front of `dsh web`.
+
 ![Sign-in window](docs/auth-window.png)
 
 ## Features
@@ -163,6 +172,8 @@ Failures share one envelope: `{ ok: false, error: { code, message } }`.
 
 ## Security notes
 
+- Again: **this is a toy plugin and not recommended for production** (see the
+  disclaimer at the top).
 - Demo mode is for local/trusted networks only: plain JSON storage, no login
   rate limiting, single process.
 - Passwords are stored as salted scrypt hashes; tokens are stored only as

@@ -7,6 +7,13 @@
 ![language](https://img.shields.io/badge/language-TypeScript-3178c6.svg)
 ![platform](https://img.shields.io/badge/platform-DeepSeek%20Harness-4b8bf5.svg)
 
+> ⚠️ **玩具插件声明（Toy plugin）**
+>
+> 本项目是一个演示/玩具性质的插件，仅用于学习和本地体验，**不建议部署到生产环境**：
+> 强制登录只是前端 UI 层（可被绕过），演示模式使用明文 JSON 存储且无登录限流，
+> 内置管理员账号密码公开在本文档中。生产环境请改用 `mode: proxy` 对接真实鉴权服务，
+> 并在 `dsh web` 前部署带认证的反向代理。
+
 ![登录/注册窗口](docs/auth-window.png)
 
 ## 特性
@@ -144,6 +151,7 @@ pnpm dsh --profile web web
 
 ## 安全说明
 
+- 再次强调：**本项目是玩具插件，不建议生产部署**（见文首声明）。
 - 演示模式仅适合本地/内网使用：明文 JSON 存储、无登录限流、单进程。
 - 密码以 scrypt（随机盐）哈希保存；令牌只存 SHA-256 摘要，不落明文。
 - 默认管理员密码仅用于本地演示，正式部署前请修改或改用代理模式。
