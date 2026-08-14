@@ -27,6 +27,11 @@
 |---|---|
 | ![登录窗口](docs/auth-window.png) | ![登录后](docs/logged-in.png) |
 
+## 待办事项 (TODO)
+
+- [ ] **管理员账号**：内置管理员账户，可随时控制演示模式下注册功能的开与关
+- [ ] **注册面板**：设置面板中的账号管理界面（用户列表、删除账号、开放注册开关）
+
 ## 快速开始
 
 需要 Node.js ≥ 22.19 和 [`@deepseek-ai/dsh`](https://www.npmjs.com/package/@deepseek-ai/dsh)
