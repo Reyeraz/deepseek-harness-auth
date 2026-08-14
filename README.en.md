@@ -70,6 +70,32 @@ bottom of the sidebar.
 > `dsh plugin --profile web add ./dsh-auth-0.1.0.tgz` (run `npm pack` first).
 > Once published to npm: `dsh plugin --profile web add dsh-auth`.
 
+### Install from GitHub
+
+```sh
+dsh plugin --profile web add "github:Reyeraz/deepseek-harness-auth"
+```
+
+Git installs run the `prepare` build script (which produces `lib/`) at install
+time. pnpm refuses to run build scripts for packages that are not allowlisted,
+so the first install fails and prints a hint like this:
+
+```text
+Add the package to "allowBuilds" in your project's pnpm-workspace.yaml ...
+allowBuilds:
+  dsh-auth@git+ssh://git@github.com/Reyeraz/deepseek-harness-auth.git#<sha>: true
+```
+
+Add the exact line pnpm printed under `allowBuilds` in
+`$DSH_HOME/profiles/web/pnpm-workspace.yaml`, then re-run the install command.
+
+For production, pin a commit so a later push cannot silently change what gets
+installed:
+
+```sh
+dsh plugin --profile web add "github:Reyeraz/deepseek-harness-auth#<commit-sha>"
+```
+
 ### Default account (demo mode)
 
 | Role | Username | Password |

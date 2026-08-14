@@ -55,6 +55,30 @@ dsh --profile web web
 > 也可以直接安装构建产物：`dsh plugin --profile web add ./dsh-auth-0.1.0.tgz`
 > （先执行 `npm pack`）。发布到 npm 后则为 `dsh plugin --profile web add dsh-auth`。
 
+### 从 GitHub 安装
+
+```sh
+dsh plugin --profile web add "github:Reyeraz/deepseek-harness-auth"
+```
+
+git 安装会在安装时执行 `prepare` 构建脚本（生成 `lib/`）。pnpm 默认禁止未白名单
+包的构建脚本，所以第一次安装会失败，并在终端打印类似下面的提示：
+
+```text
+Add the package to "allowBuilds" in your project's pnpm-workspace.yaml ...
+allowBuilds:
+  dsh-auth@git+ssh://git@github.com/Reyeraz/deepseek-harness-auth.git#<sha>: true
+```
+
+把 pnpm 打印的那一行加到 `$DSH_HOME/profiles/web/pnpm-workspace.yaml` 的
+`allowBuilds` 下，然后重新执行安装命令即可。
+
+生产使用建议固定提交，避免后续推送悄悄改变安装内容：
+
+```sh
+dsh plugin --profile web add "github:Reyeraz/deepseek-harness-auth#<commit-sha>"
+```
+
 ### 默认账号（演示模式）
 
 | 角色 | 用户名 | 密码 |
