@@ -2,7 +2,8 @@
 
 > A **sign-in / sign-up window** plugin for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 > Web UI: a sidebar entry button plus a login/register modal, with a built-in
-> demo auth API and an optional proxy mode for your own account backend.
+> demo auth API, an admin account, and an optional proxy mode for your own
+> account backend.
 
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![language](https://img.shields.io/badge/language-TypeScript-3178c6.svg)
@@ -15,10 +16,15 @@
 - A "Sign in / Sign up" entry at the bottom of the sidebar; collapses to a
   circular icon with a tooltip.
 - A login/register modal with two tabs: form validation, busy states, error
-  and success feedback, and Enter-to-submit.
+  and success feedback, and Enter-to-submit. The register tab is disabled
+  with a notice while an admin has closed registration.
 - After signing in the sidebar shows the user name, and the modal becomes a
   "My account" profile view with a sign-out button.
 - The session token lives in `localStorage`, so the session survives reloads.
+- **Built-in admin account** (demo mode): `admin / admin123`; can toggle
+  registration on/off at any time.
+- **Account management in the settings panel**: list every account, delete
+  regular accounts, and open/close registration with one click.
 - **Demo mode (default)**: the host ships its own account store (scrypt salted
   hashes + random tokens), persisted to `<profile>/data/dsh-auth/auth.json`.
   Zero external dependencies.
@@ -26,7 +32,8 @@
   backend, avoiding CORS entirely.
 - Built entirely on the official plugin channels: `dsh.bundle` install layer,
   `dsh.client` client modules, and the slot system (`sidebar.footer.action`
-  for the entry, `shell.overlay` for the modal).
+  for the entry, `shell.overlay` for the modal, `settings.general.item` for
+  the account-management row).
 
 ## Screenshots
 
@@ -58,6 +65,16 @@ bottom of the sidebar.
 > You can also install the packed artifact:
 > `dsh plugin --profile web add ./dsh-auth-0.1.0.tgz` (run `npm pack` first).
 > Once published to npm: `dsh plugin --profile web add dsh-auth`.
+
+### Default account (demo mode)
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+
+After signing in as admin, open **Settings → Account management** to manage
+accounts: toggle registration, view the account list, and delete regular
+accounts. The built-in admin account cannot be deleted.
 
 ### Install from a source checkout (development)
 
@@ -91,8 +108,8 @@ channels:
 
 | Half | Entry | Role |
 |---|---|---|
-| Host (Node) | [`src/index.ts`](src/index.ts) | Registers `/dsh-auth/*` routes on `ctx.webServer` (same origin, no CORS); demo mode implements the account/session store, proxy mode forwards to an external API |
-| Client (browser) | [`src/client/index.ts`](src/client/index.ts) | Loaded through the `dsh.client` client-module mechanism; registers the entry button in `sidebar.footer.action` and the modal in `shell.overlay`, sharing one store instance |
+| Host (Node) | [`src/index.ts`](src/index.ts) | Registers `/dsh-auth/*` routes on `ctx.webServer` (same origin, no CORS); demo mode implements the account/session/registration store, proxy mode forwards to an external API |
+| Client (browser) | [`src/client/index.ts`](src/client/index.ts) | Loaded through the `dsh.client` client-module mechanism; registers the entry button in `sidebar.footer.action`, the modal in `shell.overlay`, and the account-management row in `settings.general.item`, sharing one store instance |
 
 `shell.overlay` is the frame-wide floating layer the official docs reserve for
 plugins (an additive list slot); the modal is rendered there with the
@@ -102,10 +119,14 @@ framework's built-in `Modal` component.
 
 | Method | Path | Request body | Response |
 |---|---|---|---|
-| POST | `/dsh-auth/register` | `{ username, password, displayName? }` | `201 { ok, user }`; 409 username taken |
+| POST | `/dsh-auth/register` | `{ username, password, displayName? }` | `201 { ok, user }`; 409 username taken; 403 registration closed |
 | POST | `/dsh-auth/login` | `{ username, password }` | `200 { ok, token, user }`; 401 invalid credentials |
 | GET | `/dsh-auth/session` | header `Authorization: Bearer <token>` | `200 { ok, user }`; 401 unauthenticated/expired |
 | POST | `/dsh-auth/logout` | same header | `200 { ok }` |
+| GET | `/dsh-auth/meta` | - | `200 { ok, mode, registrationOpen }` |
+| GET | `/dsh-auth/admin/users` | header (admin) | `200 { ok, users, registrationOpen }`; 403 non-admin |
+| POST | `/dsh-auth/admin/registration` | `{ open: boolean }` (admin) | `200 { ok, registrationOpen }` |
+| POST | `/dsh-auth/admin/users/remove` | `{ username }` (admin) | `200 { ok, removed }`; built-in admin protected |
 
 Failures share one envelope: `{ ok: false, error: { code, message } }`.
 
@@ -115,8 +136,8 @@ Failures share one envelope: `{ ok: false, error: { code, message } }`.
   rate limiting, single process.
 - Passwords are stored as salted scrypt hashes; tokens are stored only as
   SHA-256 digests.
-- For production, set `mode: proxy` with a real auth service, or fork this
-  repository.
+- The default admin password is for local demos only; change it or use proxy
+  mode before any real deployment.
 
 ## Development and testing
 
@@ -128,7 +149,8 @@ npm pack            # produce an installable tarball
 
 The repository ships a Playwright end-to-end script covering the full user
 journey (open modal, register, sign in, session restore after reload, profile
-view, sign out, wrong-password error), with a screenshot at every step:
+view, sign out, wrong-password error, admin account management, registration
+switch), with a screenshot at every step:
 
 ```sh
 # start dsh web first (default port 3080), then:

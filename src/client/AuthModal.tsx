@@ -7,6 +7,7 @@ import {
   Button, IconUserOutline16, IconWarningOutline16, Input, Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import { useEffect, useState } from 'react'
 // Type-only: pulls the ui-layout SlotMap merge ('shell.overlay').
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { AuthApi } from './api.ts'
@@ -32,11 +33,29 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
   const password = useStore(state => state.password)
   const confirm = useStore(state => state.confirm)
   const displayName = useStore(state => state.displayName)
+  // Null while unknown: the modal stays permissive until meta answers.
+  const [registrationOpen, setRegistrationOpen] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    void api.meta().then(
+      meta => { if (!cancelled) setRegistrationOpen(meta.registrationOpen !== false) },
+      () => { if (!cancelled) setRegistrationOpen(true) },
+    )
+    return () => { cancelled = true }
+  }, [open, api])
 
   if (!open) return null
 
+  const registrationDisabled = registrationOpen === false
+
   const submit = async (): Promise<void> => {
     if (busy || user !== null) return
+    if (tab === 'register' && registrationDisabled) {
+      actions.setError(t('modal.registerClosed'))
+      return
+    }
     if (tab === 'login') {
       if (username === '' || password === '') {
         actions.setError(t('error.required'))
@@ -128,6 +147,7 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
           aria-selected={tab === 'register'}
           data-dsh-auth-tab
           data-active={tab === 'register' ? '' : undefined}
+          disabled={registrationDisabled}
           onClick={() => { actions.switchTab('register') }}
         >
           {t('tab.register')}
@@ -193,6 +213,9 @@ export function AuthModal({ useStore, actions, api, t }: AuthModalProps) {
         </div>
       )}
       {notice !== null && <div data-dsh-auth-notice>{notice}</div>}
+      {registrationDisabled && tab === 'login' && (
+        <div data-dsh-auth-notice>{t('modal.registerClosed')}</div>
+      )}
     </>
   )
 

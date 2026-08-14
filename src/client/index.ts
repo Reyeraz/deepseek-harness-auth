@@ -9,6 +9,9 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { BoundActions } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls ctx.locale into this program.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+// Type-only: pulls the settings SlotMap merge ('settings.general.item').
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import { AccountManagementRow } from './AccountManagementRow.tsx'
 import { AuthModal, type AuthModalInjected } from './AuthModal.tsx'
 import { AuthTrigger } from './AuthTrigger.tsx'
 import { createAuthApi } from './api.ts'
@@ -70,4 +73,13 @@ export function apply(ctx: ClientContext): void {
       return { api }
     },
   }, AuthModal))
+
+  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
+    name: 'settings.general.item',
+    id: 'dsh-auth-account-management',
+    order: 20,
+    locale: NS,
+    store: authStore,
+    inject: (): AuthModalInjected => ({ api }),
+  }, AccountManagementRow))
 }

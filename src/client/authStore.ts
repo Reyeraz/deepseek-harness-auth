@@ -9,6 +9,7 @@ import { defineStore } from '@deepseek-ai/dsh-client-runtime/client'
 export interface AuthUser {
   username: string
   displayName: string
+  role: 'user' | 'admin'
 }
 
 export interface AuthState {

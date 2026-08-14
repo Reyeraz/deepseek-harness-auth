@@ -60,11 +60,12 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 
 page.on('console', (msg) => {
   // 401/409 resource messages are the intentional negative-path tests.
-  if (msg.type() === 'error' && !/Failed to load resource.*(401|409)/u.test(msg.text())) {
+  if (msg.type() === 'error' && !/Failed to load resource.*(401|403|409)/u.test(msg.text())) {
     consoleErrors.push(msg.text())
   }
 })
 page.on('pageerror', (err) => { consoleErrors.push(`pageerror: ${err.message}`) })
+page.on('dialog', (dialog) => { void dialog.accept() })
 
 const shot = (name) => page.screenshot({ path: join(outDir, `${name}.png`) })
 
@@ -154,6 +155,105 @@ try {
   await page.waitForSelector('[data-dsh-auth-error]', { timeout: 15_000 })
   log('wrong password shows error', true, await page.locator('[data-dsh-auth-error]').innerText())
   await shot('09-login-error')
+
+  // 10. Close the error modal and sign in as the built-in admin.
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 15_000 }).catch(() => {})
+  await page.click('[data-dsh-auth-trigger]')
+  await page.waitForSelector('[role="dialog"]', { timeout: 15_000 })
+  await page.fill('#dsh-auth-username', 'admin')
+  await page.fill('#dsh-auth-password', 'admin123')
+  await page.click('[role="dialog"] [data-dsh-auth-submit]')
+  await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 15_000 })
+  await page.waitForTimeout(500)
+  const adminTrigger = await page.locator('[data-dsh-auth-trigger]').innerText()
+  log('admin signs in', adminTrigger.includes('管理员'), adminTrigger.trim())
+  await shot('10-admin-signed-in')
+
+  // 11. Open settings and find the account-management row.
+  await page.click('button[aria-haspopup="dialog"]')
+  await page.waitForSelector('[data-dsh-auth-settings]', { timeout: 15_000 })
+  const rowText = await page.locator('[data-dsh-auth-settings]').innerText()
+  log('settings account-management row renders',
+    rowText.includes('账号管理') && rowText.includes('开放注册'),
+    rowText.slice(0, 120).replace(/\n/g, ' / '))
+  await shot('11-settings-account-management')
+
+  // 12. Toggle registration off and confirm via /meta.
+  await page.click('[data-dsh-auth-registration-toggle]')
+  await page.waitForFunction(
+    () => document.querySelector('[data-dsh-auth-registration-toggle]')?.textContent?.includes('已关闭'),
+    { timeout: 15_000 },
+  )
+  const metaClosed = await page.evaluate(async () => (await fetch('/dsh-auth/meta')).json())
+  log('registration closed by admin', metaClosed.registrationOpen === false, JSON.stringify(metaClosed))
+  await shot('12-registration-closed')
+
+  // 13. Delete the test account from the settings list.
+  const userRow = page.locator(`[data-dsh-auth-user]:has-text("${username}")`)
+  await userRow.waitFor({ timeout: 15_000 })
+  await userRow.locator('[data-dsh-auth-user-delete]').click()
+  await page.waitForFunction(
+    (name) => ![...document.querySelectorAll('[data-dsh-auth-user]')].some(el => el.textContent.includes(name)),
+    username,
+    { timeout: 15_000 },
+  )
+  log('admin deletes a user from settings', true)
+  await shot('13-user-deleted')
+
+  // 14. Close settings, sign out, and verify the register tab is disabled.
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('[data-dsh-auth-settings]', { state: 'detached', timeout: 15_000 }).catch(() => {})
+  await page.click('[data-dsh-auth-trigger]')
+  await page.waitForSelector('[role="dialog"]', { timeout: 15_000 })
+  await page.click('[role="dialog"] [data-dsh-auth-logout]')
+  await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 15_000 })
+  await page.click('[data-dsh-auth-trigger]')
+  await page.waitForSelector('[role="dialog"]', { timeout: 15_000 })
+  await page.waitForTimeout(800)
+  const registerTabDisabled = await page.locator('[data-dsh-auth-tab]:has-text("注册")').isDisabled()
+  const closedNotice = await page.locator('[data-dsh-auth-notice]:has-text("管理员已关闭注册")').count()
+  log('register tab disabled when registration closed', registerTabDisabled && closedNotice > 0)
+  await shot('14-register-closed-ui')
+
+  // 15. Direct API check: registration must reject with 403.
+  const rejectResult = await page.evaluate(async () => {
+    const response = await fetch('/dsh-auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: `blocked${Date.now() % 100_000}`,
+        password: 'secret123',
+      }),
+    })
+    return { status: response.status, body: await response.json() }
+  })
+  log('register API rejects when closed',
+    rejectResult.status === 403,
+    `${rejectResult.status} ${rejectResult.body?.error?.code}`)
+
+  // 16. Sign back in as admin and re-open registration for later runs.
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 15_000 }).catch(() => {})
+  await page.click('[data-dsh-auth-trigger]')
+  await page.waitForSelector('[role="dialog"]', { timeout: 15_000 })
+  await page.fill('#dsh-auth-username', 'admin')
+  await page.fill('#dsh-auth-password', 'admin123')
+  await page.click('[role="dialog"] [data-dsh-auth-submit]')
+  await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 15_000 })
+  await page.click('button[aria-haspopup="dialog"]')
+  await page.waitForSelector('[data-dsh-auth-settings]', { timeout: 15_000 })
+  const toggleText = await page.locator('[data-dsh-auth-registration-toggle]').innerText()
+  if (toggleText.includes('已关闭')) {
+    await page.click('[data-dsh-auth-registration-toggle]')
+  }
+  await page.waitForFunction(
+    () => document.querySelector('[data-dsh-auth-registration-toggle]')?.textContent?.includes('已开启'),
+    { timeout: 15_000 },
+  )
+  const metaOpen = await page.evaluate(async () => (await fetch('/dsh-auth/meta')).json())
+  log('registration re-opened by admin', metaOpen.registrationOpen === true, JSON.stringify(metaOpen))
+  await shot('15-registration-reopened')
 } catch (error) {
   failures.push(`${error.stack ?? error}`)
   log('run', false, error.message)

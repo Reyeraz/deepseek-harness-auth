@@ -10,6 +10,21 @@ export interface AuthApi {
   register(username: string, password: string, displayName: string): Promise<void>
   logout(): Promise<void>
   restore(): Promise<AuthUser | null>
+  meta(): Promise<AuthMeta>
+  adminUsers(): Promise<AdminSnapshot>
+  setRegistration(open: boolean): Promise<void>
+  deleteUser(username: string): Promise<void>
+}
+
+export interface AuthMeta {
+  mode: 'demo' | 'proxy'
+  /** Demo mode only; null in proxy mode (unknown/owned by the external service). */
+  registrationOpen: boolean | null
+}
+
+export interface AdminSnapshot {
+  users: AuthUser[]
+  registrationOpen: boolean
 }
 
 interface ApiErrorBody {
@@ -87,6 +102,33 @@ export function createAuthApi(): AuthApi {
         writeToken('')
         return null
       }
+    },
+    async meta() {
+      const result = await request<{ mode: 'demo' | 'proxy'; registrationOpen?: boolean }>('/meta', {
+        method: 'GET',
+      })
+      return {
+        mode: result.mode,
+        registrationOpen: result.registrationOpen ?? null,
+      }
+    },
+    async adminUsers() {
+      const result = await request<{ users: AuthUser[]; registrationOpen: boolean }>('/admin/users', {
+        token: readToken(),
+      })
+      return { users: result.users, registrationOpen: result.registrationOpen }
+    },
+    async setRegistration(open) {
+      await request<{ ok: boolean }>('/admin/registration', {
+        body: { open },
+        token: readToken(),
+      })
+    },
+    async deleteUser(username) {
+      await request<{ ok: boolean }>('/admin/users/remove', {
+        body: { username },
+        token: readToken(),
+      })
     },
   }
 }

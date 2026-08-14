@@ -7,7 +7,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { WebServer } from '@deepseek-ai/dsh-host-webserver'
 import type { Config } from '../config.ts'
-import { AuthError, JsonAuthStore } from './store.ts'
+import { AuthError, JsonAuthStore, type AuthUser } from './store.ts'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -68,6 +68,19 @@ function stringField(body: Record<string, unknown>, key: string): string {
   return typeof value === 'string' ? value : ''
 }
 
+async function adminOf(req: IncomingMessage, store: JsonAuthStore): Promise<AuthUser | null> {
+  const user = await store.session(bearerToken(req))
+  return user !== null && user.role === 'admin' ? user : null
+}
+
+function adminError(res: ServerResponse): void {
+  sendError(res, 403, 'ADMIN_REQUIRED', '需要管理员账号')
+}
+
+function proxyAdminError(res: ServerResponse): void {
+  sendError(res, 501, 'ADMIN_IN_PROXY', '代理模式下账号管理由外部服务提供')
+}
+
 function routeOf(path: string, apiBaseUrl: string): string {
   return `${apiBaseUrl.replace(/\/+$/u, '')}${path}`
 }
@@ -125,7 +138,10 @@ export function registerAuthRoutes(
           sendJson(res, 201, { ok: true, user })
         } catch (error) {
           if (error instanceof AuthError) {
-            sendError(res, error.code === 'USERNAME_TAKEN' ? 409 : 400, error.code, error.message)
+            const status = error.code === 'USERNAME_TAKEN'
+              ? 409
+              : error.code === 'REGISTRATION_CLOSED' ? 403 : 400
+            sendError(res, status, error.code, error.message)
           } else {
             sendError(res, 500, 'INTERNAL', '注册失败，请稍后重试')
           }
@@ -170,6 +186,67 @@ export function registerAuthRoutes(
         if (config.mode === 'proxy') return proxy(req, res, config.apiBaseUrl)
         await store.logout(bearerToken(req))
         sendJson(res, 200, { ok: true })
+      },
+    },
+    {
+      path: '/dsh-auth/meta',
+      handler: async (_req: IncomingMessage, res: ServerResponse): Promise<void> => {
+        if (config.mode === 'proxy') {
+          sendJson(res, 200, { ok: true, mode: 'proxy' })
+          return
+        }
+        sendJson(res, 200, { ok: true, mode: 'demo', registrationOpen: store.registrationState })
+      },
+    },
+    {
+      path: '/dsh-auth/admin/users',
+      handler: async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+        if (config.mode === 'proxy') return proxyAdminError(res)
+        const admin = await adminOf(req, store)
+        if (admin === null) return adminError(res)
+        sendJson(res, 200, {
+          ok: true,
+          users: store.listUsers(),
+          registrationOpen: store.registrationState,
+        })
+      },
+    },
+    {
+      path: '/dsh-auth/admin/registration',
+      handler: async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+        if (config.mode === 'proxy') return proxyAdminError(res)
+        const admin = await adminOf(req, store)
+        if (admin === null) return adminError(res)
+        try {
+          const body = await readJson(req)
+          if (typeof body.open !== 'boolean') {
+            sendError(res, 400, 'BAD_REQUEST', 'open 必须是布尔值')
+            return
+          }
+          const registrationOpen = await store.setRegistrationOpen(body.open)
+          sendJson(res, 200, { ok: true, registrationOpen })
+        } catch (error) {
+          sendError(res, 500, 'INTERNAL', '更新注册开关失败')
+        }
+      },
+    },
+    {
+      path: '/dsh-auth/admin/users/remove',
+      handler: async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+        if (config.mode === 'proxy') return proxyAdminError(res)
+        const admin = await adminOf(req, store)
+        if (admin === null) return adminError(res)
+        try {
+          const body = await readJson(req)
+          const removed = await store.deleteUser(stringField(body, 'username'))
+          sendJson(res, 200, { ok: true, removed })
+        } catch (error) {
+          if (error instanceof AuthError) {
+            sendError(res, error.code === 'ADMIN_PROTECTED' ? 400 : 404, error.code, error.message)
+          } else {
+            sendError(res, 500, 'INTERNAL', '删除账号失败')
+          }
+        }
       },
     },
   ]
